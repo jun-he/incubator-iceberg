@@ -186,6 +186,10 @@ public class Projections {
         return predicate((BoundPredicate<?>) bound);
       }
 
+      if (bound instanceof BoundSetPredicate) {
+        return predicate((BoundSetPredicate<?>) bound);
+      }
+
       return bound;
     }
 
@@ -221,6 +225,24 @@ public class Projections {
         // similarly, if partitioning by day(ts) and hour(ts), the more restrictive
         // projection should be used. ts = 2019-01-01T01:00:00 produces day=2019-01-01 and
         // hour=2019-01-01-01. the value will be in 2019-01-01-01 and not in 2019-01-01-02.
+        UnboundPredicate<?> inclusiveProjection = ((Transform<T, ?>) part.transform()).project(part.name(), pred);
+        if (inclusiveProjection != null) {
+          result = Expressions.and(result, inclusiveProjection);
+        }
+      }
+
+      return result;
+    }
+
+    @Override
+    public <T> Expression predicate(BoundSetPredicate<T> pred) {
+      Collection<PartitionField> parts = spec().getFieldsBySourceId(pred.ref().fieldId());
+      if (parts == null) {
+        // the predicate has no partition column
+        return Expressions.alwaysTrue();
+      }
+      Expression result = Expressions.alwaysTrue();
+      for (PartitionField part : parts) {
         UnboundPredicate<?> inclusiveProjection = ((Transform<T, ?>) part.transform()).project(part.name(), pred);
         if (inclusiveProjection != null) {
           result = Expressions.and(result, inclusiveProjection);

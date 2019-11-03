@@ -22,6 +22,7 @@ package org.apache.iceberg.transforms;
 import com.google.common.base.Objects;
 import java.nio.ByteBuffer;
 import org.apache.iceberg.expressions.BoundPredicate;
+import org.apache.iceberg.expressions.BoundSetPredicate;
 import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.expressions.UnboundPredicate;
 import org.apache.iceberg.types.Type;
@@ -60,9 +61,23 @@ class Identity<T> implements Transform<T, T> {
   }
 
   @Override
+  public UnboundPredicate<T> project(String name, BoundSetPredicate<T> predicate) {
+    return projectStrict(name, predicate);
+  }
+
+  @Override
   public UnboundPredicate<T> projectStrict(String name, BoundPredicate<T> predicate) {
     if (predicate.literal() != null) {
       return Expressions.predicate(predicate.op(), name, predicate.literal().value());
+    } else {
+      return Expressions.predicate(predicate.op(), name);
+    }
+  }
+
+  @Override
+  public UnboundPredicate<T> projectStrict(String name, BoundSetPredicate<T> predicate) {
+    if (predicate.literalSet() != null) {
+      return Expressions.predicate(predicate.op(), name, predicate.literals());
     } else {
       return Expressions.predicate(predicate.op(), name);
     }

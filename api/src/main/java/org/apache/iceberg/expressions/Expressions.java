@@ -144,7 +144,7 @@ public class Expressions {
     return predicate(op, name, Collections.singleton(lit));
   }
 
-  private static <T> UnboundPredicate<T> predicate(Operation op, String name, Collection<Literal<T>> lits) {
+  public static <T> UnboundPredicate<T> predicate(Operation op, String name, Collection<Literal<T>> lits) {
     return new UnboundPredicate<>(op, ref(name), lits);
   }
 

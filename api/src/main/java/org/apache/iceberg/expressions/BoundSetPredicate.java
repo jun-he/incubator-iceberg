@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.iceberg.util.CharSequenceWrapper;
 
 public class BoundSetPredicate<T> extends Predicate<BoundReference<T>> {
@@ -57,6 +58,10 @@ public class BoundSetPredicate<T> extends Predicate<BoundReference<T>> {
 
   public Set<T> literalSet() {
     return literalSet;
+  }
+
+  public Set<Literal<T>> literals() {
+    return literalSet.stream().map(Literals::from).collect(Collectors.toSet());
   }
 
   @Override

@@ -21,6 +21,7 @@ package org.apache.iceberg.transforms;
 
 import java.io.Serializable;
 import org.apache.iceberg.expressions.BoundPredicate;
+import org.apache.iceberg.expressions.BoundSetPredicate;
 import org.apache.iceberg.expressions.UnboundPredicate;
 import org.apache.iceberg.types.Type;
 
@@ -71,6 +72,21 @@ public interface Transform<S, T> extends Serializable {
   UnboundPredicate<T> project(String name, BoundPredicate<S> predicate);
 
   /**
+   * Transforms a {@link BoundSetPredicate predicate} to an inclusive predicate on the partition
+   * values produced by {@link #apply(Object)}.
+   * <p>
+   * This inclusive transform guarantees that if pred(v) is true, then projected(apply(v)) is true.
+   *
+   * @param name the field name for partition values
+   * @param predicate a predicate for source values
+   * @return an inclusive predicate on partition values
+   */
+  default UnboundPredicate<T> project(String name, BoundSetPredicate<S> predicate) {
+    throw new UnsupportedOperationException(
+        "project for BoundSetPredicate is not supported by the transform function");
+  }
+
+  /**
    * Transforms a {@link BoundPredicate predicate} to a strict predicate on the partition values
    * produced by {@link #apply(Object)}.
    * <p>
@@ -81,6 +97,21 @@ public interface Transform<S, T> extends Serializable {
    * @return an inclusive predicate on partition values
    */
   UnboundPredicate<T> projectStrict(String name, BoundPredicate<S> predicate);
+
+  /**
+   * Transforms a {@link BoundSetPredicate predicate} to a strict predicate on the partition values
+   * produced by {@link #apply(Object)}.
+   * <p>
+   * This strict transform guarantees that if strict(apply(v)) is true, then pred(v) is also true.
+   *
+   * @param name the field name for partition values
+   * @param predicate a predicate for source values
+   * @return an inclusive predicate on partition values
+   */
+  default UnboundPredicate<T> projectStrict(String name, BoundSetPredicate<S> predicate) {
+    throw new UnsupportedOperationException(
+        "projectStrict for BoundSetPredicate is not supported by the transform function");
+  }
 
   /**
    * Returns a human-readable String representation of a transformed value.
