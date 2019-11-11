@@ -23,14 +23,20 @@ import com.google.common.base.Objects;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.stream.Collectors;
 import org.apache.iceberg.expressions.BoundPredicate;
+import org.apache.iceberg.expressions.BoundSetPredicate;
 import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.Literal;
 import org.apache.iceberg.expressions.UnboundPredicate;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.util.UnicodeUtil;
 
+import static org.apache.iceberg.expressions.Expression.Operation.IN;
 import static org.apache.iceberg.expressions.Expression.Operation.IS_NULL;
+import static org.apache.iceberg.expressions.Expression.Operation.NOT_IN;
 import static org.apache.iceberg.expressions.Expression.Operation.NOT_NULL;
+import static org.apache.iceberg.expressions.Expressions.predicate;
 
 abstract class Truncate<T> implements Transform<T, T> {
   @SuppressWarnings("unchecked")
@@ -97,6 +103,15 @@ abstract class Truncate<T> implements Transform<T, T> {
     }
 
     @Override
+    public UnboundPredicate<Integer> project(String name, BoundSetPredicate<Integer> pred) {
+      if (pred.op() == IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
+    }
+
+    @Override
     public UnboundPredicate<Integer> projectStrict(String name, BoundPredicate<Integer> pred) {
       // TODO: for integers, can this return the original predicate?
       // No. the predicate needs to be in terms of the applied value. For all x, apply(x) <= x.
@@ -105,6 +120,15 @@ abstract class Truncate<T> implements Transform<T, T> {
         return Expressions.predicate(pred.op(), name);
       }
       return ProjectionUtil.truncateIntegerStrict(name, pred, this);
+    }
+
+    @Override
+    public UnboundPredicate<Integer> projectStrict(String name, BoundSetPredicate<Integer> pred) {
+      if (pred.op() == NOT_IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
     }
 
     @Override
@@ -165,11 +189,29 @@ abstract class Truncate<T> implements Transform<T, T> {
     }
 
     @Override
+    public UnboundPredicate<Long> project(String name, BoundSetPredicate<Long> pred) {
+      if (pred.op() == IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
+    }
+
+    @Override
     public UnboundPredicate<Long> projectStrict(String name, BoundPredicate<Long> pred) {
       if (pred.op() == NOT_NULL || pred.op() == IS_NULL) {
         return Expressions.predicate(pred.op(), name);
       }
       return ProjectionUtil.truncateLongStrict(name, pred, this);
+    }
+
+    @Override
+    public UnboundPredicate<Long> projectStrict(String name, BoundSetPredicate<Long> pred) {
+      if (pred.op() == NOT_IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
     }
 
     @Override
@@ -235,6 +277,16 @@ abstract class Truncate<T> implements Transform<T, T> {
     }
 
     @Override
+    public UnboundPredicate<CharSequence> project(String name,
+                                                  BoundSetPredicate<CharSequence> pred) {
+      if (pred.op() == IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
+    }
+
+    @Override
     public UnboundPredicate<CharSequence> projectStrict(String name,
                                                         BoundPredicate<CharSequence> predicate) {
       switch (predicate.op()) {
@@ -252,6 +304,16 @@ abstract class Truncate<T> implements Transform<T, T> {
         default:
           return ProjectionUtil.truncateArrayStrict(name, predicate, this);
       }
+    }
+
+    @Override
+    public UnboundPredicate<CharSequence> projectStrict(String name,
+                                                        BoundSetPredicate<CharSequence> pred) {
+      if (pred.op() == NOT_IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
     }
 
     @Override
@@ -315,12 +377,33 @@ abstract class Truncate<T> implements Transform<T, T> {
     }
 
     @Override
+    public UnboundPredicate<ByteBuffer> project(String name,
+                                                BoundSetPredicate<ByteBuffer> pred) {
+      if (pred.op() == IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
+    }
+
+
+    @Override
     public UnboundPredicate<ByteBuffer> projectStrict(String name,
                                                       BoundPredicate<ByteBuffer> pred) {
       if (pred.op() == NOT_NULL || pred.op() == IS_NULL) {
         return Expressions.predicate(pred.op(), name);
       }
       return ProjectionUtil.truncateArrayStrict(name, pred, this);
+    }
+
+    @Override
+    public UnboundPredicate<ByteBuffer> projectStrict(String name,
+                                                      BoundSetPredicate<ByteBuffer> pred) {
+      if (pred.op() == NOT_IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
     }
 
     @Override
@@ -394,12 +477,31 @@ abstract class Truncate<T> implements Transform<T, T> {
     }
 
     @Override
+    public UnboundPredicate<BigDecimal> project(String name, BoundSetPredicate<BigDecimal> pred) {
+      if (pred.op() == IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
+    }
+
+    @Override
     public UnboundPredicate<BigDecimal> projectStrict(String name,
                                                       BoundPredicate<BigDecimal> pred) {
       if (pred.op() == NOT_NULL || pred.op() == IS_NULL) {
         return Expressions.predicate(pred.op(), name);
       }
       return ProjectionUtil.truncateDecimalStrict(name, pred, this);
+    }
+
+    @Override
+    public UnboundPredicate<BigDecimal> projectStrict(String name,
+                                                      BoundSetPredicate<BigDecimal> pred) {
+      if (pred.op() == NOT_IN) {
+        return predicate(pred.op(), name,
+            pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+      }
+      return null;
     }
 
     @Override

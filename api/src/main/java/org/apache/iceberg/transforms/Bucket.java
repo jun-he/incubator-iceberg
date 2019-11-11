@@ -29,12 +29,17 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.iceberg.expressions.BoundPredicate;
+import org.apache.iceberg.expressions.BoundSetPredicate;
 import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.Literal;
 import org.apache.iceberg.expressions.UnboundPredicate;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 
+import static org.apache.iceberg.expressions.Expression.Operation.IN;
+import static org.apache.iceberg.expressions.Expression.Operation.NOT_IN;
 import static org.apache.iceberg.types.Type.TypeID;
 
 abstract class Bucket<T> implements Transform<T, Integer> {
@@ -113,8 +118,6 @@ abstract class Bucket<T> implements Transform<T, Integer> {
       case EQ:
         return Expressions.predicate(
             predicate.op(), name, apply(predicate.literal().value()));
-//      case IN:
-//        return Expressions.predicate();
       case STARTS_WITH:
       default:
         // comparison predicates can't be projected, notEq can't be projected
@@ -125,16 +128,40 @@ abstract class Bucket<T> implements Transform<T, Integer> {
   }
 
   @Override
+  public UnboundPredicate<Integer> project(String name, BoundSetPredicate<T> predicate) {
+    if (predicate.op() == IN) {
+      return Expressions.predicate(
+          predicate.op(), name,
+          predicate
+              .literalSet()
+              .stream()
+              .map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+    }
+    // notIn can't be projected
+    return null;
+  }
+
+  @Override
   public UnboundPredicate<Integer> projectStrict(String name, BoundPredicate<T> predicate) {
     switch (predicate.op()) {
       case NOT_EQ: // TODO: need to translate not(eq(...)) into notEq in expressions
         return Expressions.predicate(predicate.op(), name, apply(predicate.literal().value()));
-//      case NOT_IN:
-//        return null;
       default:
         // no strict projection for comparison or equality
         return null;
     }
+  }
+
+  @Override
+  public UnboundPredicate<Integer> projectStrict(String name, BoundSetPredicate<T> predicate) {
+    if (predicate.op() == NOT_IN) { // TODO: need to translate not(in(...)) into notEq in expressions
+      return Expressions.predicate(predicate.op(), name,
+          predicate
+              .literalSet()
+              .stream()
+              .map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+    }
+    return null;
   }
 
   @Override

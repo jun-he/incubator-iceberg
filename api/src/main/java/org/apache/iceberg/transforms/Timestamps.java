@@ -23,14 +23,20 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.stream.Collectors;
 import org.apache.iceberg.expressions.BoundPredicate;
+import org.apache.iceberg.expressions.BoundSetPredicate;
 import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.Literal;
 import org.apache.iceberg.expressions.UnboundPredicate;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 
+import static org.apache.iceberg.expressions.Expression.Operation.IN;
 import static org.apache.iceberg.expressions.Expression.Operation.IS_NULL;
+import static org.apache.iceberg.expressions.Expression.Operation.NOT_IN;
 import static org.apache.iceberg.expressions.Expression.Operation.NOT_NULL;
+import static org.apache.iceberg.expressions.Expressions.predicate;
 
 enum Timestamps implements Transform<Long, Integer> {
   YEAR(ChronoUnit.YEARS, "year"),
@@ -83,11 +89,29 @@ enum Timestamps implements Transform<Long, Integer> {
   }
 
   @Override
+  public UnboundPredicate<Integer> project(String fieldName, BoundSetPredicate<Long> pred) {
+    if (pred.op() == IN) {
+      return predicate(pred.op(), fieldName,
+          pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+    }
+    return null;
+  }
+
+  @Override
   public UnboundPredicate<Integer> projectStrict(String fieldName, BoundPredicate<Long> pred) {
     if (pred.op() == NOT_NULL || pred.op() == IS_NULL) {
       return Expressions.predicate(pred.op(), fieldName);
     }
     return ProjectionUtil.truncateLongStrict(fieldName, pred, this);
+  }
+
+  @Override
+  public UnboundPredicate<Integer> projectStrict(String fieldName, BoundSetPredicate<Long> pred) {
+    if (pred.op() == NOT_IN) {
+      return predicate(pred.op(), fieldName,
+          pred.literalSet().stream().map(v -> Literal.of(apply(v))).collect(Collectors.toSet()));
+    }
+    return null;
   }
 
   @Override
